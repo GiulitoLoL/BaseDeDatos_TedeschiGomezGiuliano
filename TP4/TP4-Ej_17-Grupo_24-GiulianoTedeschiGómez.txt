@@ -1,0 +1,61 @@
+TP4-Ejercicio_17-Grupo_24-GiulianoTedeschiGómez
+
+CREATE PROCEDURE MonitorearTemperaturas
+AS
+BEGIN
+    DECLARE @LecturaId INT, @DispositivoId INT, @Temperatura DECIMAL(5,2), @FechaLectura DATETIME;
+    DECLARE @Mensaje VARCHAR(255);
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE CurLecturas CURSOR FOR
+        SELECT TOP 100 LecturaId, DispositivoId, Temperatura, FechaLectura
+        FROM LecturasTemperatura
+        ORDER BY FechaLectura DESC;
+
+        OPEN CurLecturas;
+
+        FETCH NEXT FROM CurLecturas INTO @LecturaId, @DispositivoId, @Temperatura, @FechaLectura;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            IF @Temperatura > 75
+            BEGIN
+                SET @Mensaje = 'Temperatura Alta';
+            END
+            ELSE IF @Temperatura < 0
+            BEGIN
+                SET @Mensaje = 'Temperatura Baja';
+            END
+            ELSE
+            BEGIN
+                FETCH NEXT FROM CurLecturas INTO @LecturaId, @DispositivoId, @Temperatura, @FechaLectura;
+                CONTINUE;
+            END;
+
+            INSERT INTO AlertasTemperatura (DispositivoId, Temperatura, FechaAlerta, Mensaje)
+            VALUES (@DispositivoId, @Temperatura, @FechaLectura, @Mensaje);
+
+            FETCH NEXT FROM CurLecturas INTO @LecturaId, @DispositivoId, @Temperatura, @FechaLectura;
+        END;
+
+        CLOSE CurLecturas;
+        DEALLOCATE CurLecturas;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        DECLARE @ErrorMessage NVARCHAR(4000), @ErrorSeverity INT, @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
+
+        IF CURSOR_STATUS('global', 'CurLecturas') >= -1
+        BEGIN
+            CLOSE CurLecturas;
+            DEALLOCATE CurLecturas;
+        END;
+    END CATCH;
+END;
