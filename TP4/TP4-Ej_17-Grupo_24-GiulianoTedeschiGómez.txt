@@ -1,5 +1,20 @@
 TP4-Ejercicio_17-Grupo_24-GiulianoTedeschiGómez
 
+CREATE TABLE LecturasTemperatura (
+    LecturaId INT PRIMARY KEY IDENTITY(1,1),
+    DispositivoId INT NOT NULL,
+    Temperatura DECIMAL(5,2) NOT NULL,
+    FechaLectura DATETIME NOT NULL
+);
+
+CREATE TABLE AlertasTemperatura (
+    AlertaId INT PRIMARY KEY IDENTITY(1,1),
+    DispositivoId INT NOT NULL,
+    Temperatura DECIMAL(5,2) NOT NULL,
+    FechaAlerta DATETIME NOT NULL,
+    Mensaje VARCHAR(255) NOT NULL
+);
+
 CREATE PROCEDURE MonitorearTemperaturas
 AS
 BEGIN
